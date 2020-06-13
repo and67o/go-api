@@ -23,4 +23,4 @@ blocks:
       jobs:
         - name: 'Job #1'
           commands:
-            - go build -v -o go-api
+            - go build -v -o go-api.bin
