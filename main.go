@@ -1,7 +1,7 @@
 package main
 
 import (
-	"hello/app"
+	"go-api/app"
 )
 
 func main() {
