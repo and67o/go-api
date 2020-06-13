@@ -10,17 +10,16 @@ blocks:
       jobs:
         - name: go test
           commands:
-            - sem-version go 1.11
-            - export GO111MODULE=on
-            - export GOPATH=~/go
-            - 'export PATH=/home/semaphore/go/bin:$PATH'
-            - checkout
-            - go get ./...
             - go test ./...
-            - go build -v .
   - name: build
     task:
       jobs:
         - name: 'Job #1'
           commands:
             - go build -v -o go-api.bin
+      prologue:
+        commands:
+          - sem-version go 1.13
+          - checkout
+          - 'cache restore vendor-$SEMAPHORE_GIT_BRANCH-$(checksum go.mod),vendor-$SEMAPHORE_GIT_BRANCH,vendor-master'
+          - go mod vendor
