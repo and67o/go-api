@@ -25,7 +25,6 @@ blocks:
           - sem-version go 1.13
           - checkout
           - 'cache restore vendor-$SEMAPHORE_GIT_BRANCH-$(checksum go.mod),vendor-$SEMAPHORE_GIT_BRANCH,vendor-master'
-          - go mod vendor
       jobs:
         - name: Build
           commands:
