@@ -1,7 +1,6 @@
 package main
 
 import (
-	"database/sql"
 	"encoding/json"
 	"go-api/db"
 	"log"
@@ -12,11 +11,11 @@ import (
 
 type App struct {
 	Router *mux.Router
-	DB     *sql.DB
+	DB     db.DBOperations
 }
 
 func (a *App) Initialize() {
-	db := db.Db
+	a.DB = db.Db
 	a.Router = mux.NewRouter()
 	a.initializeRoutes()
 }

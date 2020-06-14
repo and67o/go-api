@@ -1,7 +1,6 @@
 package db
 
 import (
-	"fmt"
 	"go-api/config"
 	"log"
 
@@ -12,6 +11,9 @@ import (
 type DBOperations interface {
 	AddUser(User User) (id int64, err error)
 	GetUser(tgId int) (res User)
+	GetOrders() (orders Order)
+	GetOrder(orderId int) (order Order)
+	DeleteOrder(orderId int) (res bool, err error)
 }
 
 type DBManager struct {
@@ -32,7 +34,6 @@ func init() {
 
 func auth() string {
 	conf := config.New()
-	fmt.Println(11, conf)
 	login := conf.Mysql.Login
 	if login == "" {
 		panic("no login")
@@ -43,22 +44,4 @@ func auth() string {
 	}
 	dbName := conf.Mysql.DbName
 	return login + ":" + pass + "@/" + dbName
-}
-
-func (DBM *DBManager) AddUser(user User) (id int64, err error) {
-	res, err := DBM.db.Exec("INSERT INTO users (name,tg_id) VALUES(?, ?)", user.Name, user.TgId)
-	if err != nil {
-		panic(err)
-	}
-	id, err = res.LastInsertId()
-	if err != nil {
-		panic(err)
-	}
-	return
-}
-
-func (DBM *DBManager) GetUser(tgId int) (user User) {
-	user = User{}
-	DBM.db.Get(&user, "select * from users Where tg_id = ?", tgId)
-	return
 }

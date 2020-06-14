@@ -6,7 +6,7 @@ type User struct {
 	Name string `db:"name"`
 }
 
-type Orders struct {
+type Order struct {
 	Id     int `db:"id"`
 	UserId int `db:"user_id"`
 	Status int `db:"status"`

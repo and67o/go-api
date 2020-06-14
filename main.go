@@ -1,8 +1,8 @@
 package main
 
 func main() {
-	a := App{}
-	a.Initialize()
+	app := App{}
+	app.Initialize()
 
-	a.Run(":8080")
+	app.Run(":8080")
 }
