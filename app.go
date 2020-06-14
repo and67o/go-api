@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"encoding/json"
+	"go-api/db"
 	"log"
 	"net/http"
 
@@ -15,6 +16,7 @@ type App struct {
 }
 
 func (a *App) Initialize() {
+	db := db.Db
 	a.Router = mux.NewRouter()
 	a.initializeRoutes()
 }
@@ -24,11 +26,11 @@ func (a *App) Run(addr string) {
 }
 
 func (a *App) initializeRoutes() {
-	a.Router.HandleFunc("/users", a.getUsers).Methods("GET")
+	a.Router.HandleFunc("/orders", a.getOrders).Methods("GET")
 }
 
-func (a *App) getUsers(w http.ResponseWriter, r *http.Request) {
-	products := "oleg"
+func (a *App) getOrders(w http.ResponseWriter, r *http.Request) {
+	products := `{"name":"John", "age":30, "city":"New York"}`
 	respondWithJSON(w, http.StatusOK, products)
 }
 
