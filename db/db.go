@@ -8,12 +8,23 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-type DBOperations interface {
-	AddUser(User User) (id int64, err error)
+type UserAction interface {
+	AddUser(user User) (id int64, err error)
 	GetUser(tgId int) (res User)
-	GetOrders() (orders Order)
+	GetUsers() (users []User)
+}
+type OrderAction interface {
 	GetOrder(orderId int) (order Order)
-	DeleteOrder(orderId int) (res bool, err error)
+	GetOrders() (orders []Order)
+	DeleteOrder(orderId int) (res bool, err string)
+}
+
+type DBOperations interface {
+	UserAction
+	OrderAction
+	// AddFactory(user Factory) (id int64, err error)
+	// GetFactory(factoryId int) (factory Factory)
+	// GetFactories() (factory Factory)
 }
 
 type DBManager struct {

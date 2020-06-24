@@ -5,14 +5,22 @@ import (
 	"go-api/db"
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/gorilla/mux"
 )
+
+type Answer struct {
+	Result interface{}
+	Errors []string
+}
 
 type App struct {
 	Router *mux.Router
 	DB     db.DBOperations
 }
+
+var errors = []string{}
 
 func (a *App) Initialize() {
 	a.DB = db.Db
@@ -26,16 +34,53 @@ func (a *App) Run(addr string) {
 
 func (a *App) initializeRoutes() {
 	a.Router.HandleFunc("/orders", a.getOrders).Methods("GET")
+	a.Router.HandleFunc("/order/{orderId}", a.getOrder).Methods("GET")
+	a.Router.HandleFunc("/order/{orderId}", a.getOrder).Methods("DELETE")
+	a.Router.HandleFunc("/users", a.getUsers).Methods("GET")
+	a.Router.HandleFunc("/user/{userId}", a.getUser).Methods("GET")
 }
 
 func (a *App) getOrders(w http.ResponseWriter, r *http.Request) {
-	products := `{"name":"John", "age":30, "city":"New York"}`
-	respondWithJSON(w, http.StatusOK, products)
+	orders := a.DB.GetOrders()
+	respondWithJSON(w, http.StatusOK, Answer{orders, errors})
 }
 
-func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
-	response, _ := json.Marshal(payload)
+func (a *App) getOrder(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	orderID, _ := strconv.Atoi(vars["orderId"])
+	order := a.DB.GetOrder(orderID)
+	respondWithJSON(w, http.StatusOK, Answer{order, errors})
+}
 
+func (a *App) getUsers(w http.ResponseWriter, r *http.Request) {
+	users := a.DB.GetUsers()
+	respondWithJSON(w, http.StatusOK, Answer{users, errors})
+}
+
+func (a *App) deleteOrder(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	orderID, ok := vars["orderId"]
+	if ok {
+		orderID, _ := strconv.Atoi(orderID)
+		order, err := a.DB.DeleteOrder(orderID)
+		if err != "" {
+			errors = append(errors, err)
+		}
+		respondWithJSON(w, http.StatusOK, Answer{order, errors})
+	}
+	errors = append(errors, "no Id")
+	respondWithJSON(w, http.StatusOK, Answer{Errors: errors})
+}
+
+func (a *App) getUser(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	UserID, _ := strconv.Atoi(vars["userId"])
+	user := a.DB.GetOrder(UserID)
+	respondWithJSON(w, http.StatusOK, Answer{user, errors})
+}
+
+func respondWithJSON(w http.ResponseWriter, code int, res Answer) {
+	response, _ := json.Marshal(res)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
 	w.Write(response)

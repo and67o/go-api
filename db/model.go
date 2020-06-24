@@ -13,15 +13,15 @@ type Order struct {
 	TimeStamps
 }
 
-type OrdersData struct {
-	Id      int `db:"id"`
-	OrderId int `db:"order_id"`
-	Factory int `db:"factory"`
-	DrinkId int `db:"drink_id"`
-	count   int `db:"count"`
-}
+// type OrdersData struct {
+// 	Id      int `db:"id"`
+// 	OrderId int `db:"order_id"`
+// 	Factory int `db:"factory"`
+// 	DrinkId int `db:"drink_id"`
+// 	count   int `db:"count"`
+// }
 
-type Factories struct {
+type Factory struct {
 	Id   int    `db:"id"`
 	Name string `db:"name"`
 	TimeStamps
