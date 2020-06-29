@@ -53,6 +53,8 @@ func (a *App) getOrder(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) getUsers(w http.ResponseWriter, r *http.Request) {
+	redisKey := "users"
+	user, err := redis.client.Get()
 	users := a.DB.GetUsers()
 	respondWithJSON(w, http.StatusOK, Answer{users, errors})
 }
@@ -63,8 +65,8 @@ func (a *App) deleteOrder(w http.ResponseWriter, r *http.Request) {
 	if ok {
 		orderID, _ := strconv.Atoi(orderID)
 		order, err := a.DB.DeleteOrder(orderID)
-		if err != "" {
-			errors = append(errors, err)
+		if err == nil {
+			errors = append(errors, err.Error())
 		}
 		respondWithJSON(w, http.StatusOK, Answer{order, errors})
 	}

@@ -16,7 +16,7 @@ type UserAction interface {
 type OrderAction interface {
 	GetOrder(orderId int) (order Order)
 	GetOrders() (orders []Order)
-	DeleteOrder(orderId int) (res bool, err string)
+	DeleteOrder(orderId int) (res bool, err error)
 }
 
 type DBOperations interface {
