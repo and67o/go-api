@@ -11,7 +11,7 @@ import (
 type UserAction interface {
 	AddUser(user User) (id int64, err error)
 	GetUser(tgId int) (res User)
-	GetUsers() (users []User)
+	GetUsers() (users []User, err error)
 }
 type OrderAction interface {
 	GetOrder(orderId int) (order Order)

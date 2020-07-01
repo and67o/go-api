@@ -1,6 +1,9 @@
 package db
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+)
 
 func (DBM *DBManager) GetOrders() (orders []Order) {
 	orders = []Order{}
@@ -44,13 +47,11 @@ func (DBM *DBManager) GetUser(tgId int) (user User) {
 	return
 }
 
-func (DBM *DBManager) GetUsers() (users []User) {
-	users = []User{}
-	err := DBM.db.Select(&users, "SELECT * FROM users")
-	for i, v := range users {
-		fmt.Println(i, v)
+func (DBM *DBManager) GetUsers() (users []User, err error) {
+	err = DBM.db.Select(&users, "SELECT * FROM users")
+	if len(users) == 0 {
+		err = errors.New("no users")
 	}
-	fmt.Println(err)
 	return
 }
 
