@@ -2,16 +2,14 @@ package db
 
 import (
 	"errors"
-	"fmt"
 )
 
-func (DBM *DBManager) GetOrders() (orders []Order) {
+func (DBM *DBManager) GetOrders() (orders []Order, err error) {
 	orders = []Order{}
-	err := DBM.db.Select(&orders, "SELECT * FROM orders")
-	for i, v := range orders {
-		fmt.Println(i, v)
+	err = DBM.db.Select(&orders, "SELECT * FROM orders")
+	if len(orders) == 0 {
+		err = errors.New("no orders")
 	}
-	fmt.Println(err)
 	return
 }
 
@@ -41,9 +39,12 @@ func (DBM *DBManager) AddUser(user User) (id int64, err error) {
 	return
 }
 
-func (DBM *DBManager) GetUser(tgId int) (user User) {
+func (DBM *DBManager) GetUser(tgId int) (user User, err error) {
 	user = User{}
 	DBM.db.Get(&user, "SELECT * FROM users WHERE tg_id = ?", tgId)
+	if user.TgId == 0 {
+		err = errors.New("no user")
+	}
 	return
 }
 

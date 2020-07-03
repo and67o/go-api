@@ -1,15 +1,18 @@
 package db
 
+import "database/sql"
+
 type User struct {
-	Id   int    `db:"id"`
-	TgId int    `db:"tg_id"`
-	Name string `db:"name"`
+	Id   int    `db:"id" json:"id"`
+	TgId int    `db:"tg_id" json:"tg_id"`
+	Name string `db:"name" json:"name"`
+	TimeStamps
 }
 
 type Order struct {
-	Id     int `db:"id"`
-	UserId int `db:"user_id"`
-	Status int `db:"status"`
+	Id     int `db:"id" json:"id"`
+	UserId int `db:"user_id" json:"user_id"`
+	Status int `db:"status" json:"status"`
 	TimeStamps
 }
 
@@ -28,8 +31,8 @@ type Factory struct {
 }
 
 type TimeStamps struct {
-	UpdatedAt string `db:"updated_at"`
-	CreatedAt string `db:"created_at"`
+	UpdatedAt sql.NullString `db:"updated_at" json:"updated_at"`
+	CreatedAt string `db:"created_at" json:"created_at"`
 }
 
 type Drinks struct {
