@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
 	"go-api/db"
 	_redis "go-api/redis"
 	"log"
@@ -23,7 +22,8 @@ type App struct {
 	Redis  *_redis.Redis
 }
 
-var apiErrors = []string{}
+var apiErrors []string
+var answer Answer
 
 func (a *App) Initialize() {
 	a.DB = db.Db
@@ -45,7 +45,6 @@ func (a *App) initializeRoutes() {
 }
 
 func (a *App) getOrders(w http.ResponseWriter, r *http.Request) {
-	answer := Answer{}
 	apiErrors = []string{}
 
 	redisOrders, err := a.Redis.GetOrders()
@@ -58,10 +57,12 @@ func (a *App) getOrders(w http.ResponseWriter, r *http.Request) {
 		_, err = a.Redis.Set(_redis.USERS, orders)
 		handleError(err)
 
-		answer = Answer{orders, apiErrors}
+		answer.setAnswerResult(orders)
 	} else {
-		answer = Answer{redisOrders, apiErrors}
+		answer.setAnswerResult(redisOrders)
 	}
+
+	answer.setAnswerErrors()
 
 	respondWithJSON(w, http.StatusOK, answer)
 }
@@ -75,7 +76,6 @@ func (a *App) getOrder(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) getUsers(w http.ResponseWriter, r *http.Request) {
-	answer := Answer{}
 	apiErrors = []string{}
 
 	redisUsers, err := a.Redis.GetUsers()
@@ -88,10 +88,13 @@ func (a *App) getUsers(w http.ResponseWriter, r *http.Request) {
 		_, err = a.Redis.Set(_redis.USERS, users)
 		handleError(err)
 
-		answer = Answer{users, apiErrors}
+		answer.setAnswerResult(users)
 	} else {
-		answer = Answer{redisUsers, apiErrors}
+		answer.setAnswerResult(redisUsers)
 	}
+
+	answer.setAnswerErrors()
+
 	respondWithJSON(w, http.StatusOK, answer)
 }
 
@@ -118,8 +121,8 @@ func (a *App) deleteOrder(w http.ResponseWriter, r *http.Request) {
 
 func (a *App) getUser(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	answer := Answer{}
 	apiErrors = []string{}
+	answer=Answer{}
 
 	UserID, err := strconv.Atoi(vars["userId"])
 	handleError(err)
@@ -130,22 +133,33 @@ func (a *App) getUser(w http.ResponseWriter, r *http.Request) {
 	if len(redisUsers) == 0 {
 		user, err := a.DB.GetUser(UserID)
 		handleError(err)
-		answer = Answer{user, apiErrors}
+		answer.setAnswerResult(user)
 	} else {
-		user, err := findUserByTgId(UserID, redisUsers)
-		handleError(err)
-		answer = Answer{user, apiErrors}
+		findUserByTgId(UserID, redisUsers)
 	}
+
+	answer.setAnswerErrors()
+
 	respondWithJSON(w, http.StatusOK, answer)
 }
 
-func findUserByTgId(tgId int, redisUsers []db.User) (user db.User, err error) {
+func (a *Answer) setAnswerErrors()  {
+	a.Errors = apiErrors
+}
+
+func (a *Answer) setAnswerResult(res interface{})  {
+	a.Result = res
+}
+
+func findUserByTgId(tgId int, redisUsers []db.User) {
 	for _, user := range redisUsers {
 		if tgId == user.TgId {
-			return user, nil
+			answer.setAnswerResult(user)
+			return
 		}
 	}
-	return db.User{}, errors.New("no user")
+	apiErrors=append(apiErrors, "no user")
+	return
 }
 
 func respondWithJSON(w http.ResponseWriter, code int, res Answer) {
