@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"go-api/db"
 	_redis "go-api/redis"
 	"log"
@@ -18,8 +19,8 @@ type Answer struct {
 
 type App struct {
 	Router *mux.Router
-	DB     db.DBOperations
-	Redis  *_redis.Redis
+	DB     db.Operations
+	Redis  _redis.Operations
 }
 
 var apiErrors []string
@@ -28,7 +29,7 @@ var answer Answer
 func (a *App) Initialize() {
 	a.DB = db.Db
 	a.Router = mux.NewRouter()
-	a.Redis, _ = _redis.NewClient()
+	a.Redis = _redis.Redis
 	a.initializeRoutes()
 }
 
@@ -38,14 +39,16 @@ func (a *App) Run(addr string) {
 
 func (a *App) initializeRoutes() {
 	a.Router.HandleFunc("/orders", a.getOrders).Methods("GET")
-	a.Router.HandleFunc("/order/{orderId}", a.getOrder).Methods("GET")
-	a.Router.HandleFunc("/order/{orderId}", a.getOrder).Methods("DELETE")
+	a.Router.HandleFunc("/order/{orderId:[0-9]+}", a.getOrder).Methods("GET")
+	a.Router.HandleFunc("/order/{orderId:[0-9]+}", a.deleteOrder).Methods("DELETE")
 	a.Router.HandleFunc("/users", a.getUsers).Methods("GET")
-	a.Router.HandleFunc("/user/{userId}", a.getUser).Methods("GET")
+	a.Router.HandleFunc("/user", a.addUser).Methods("POST")
+	a.Router.HandleFunc("/user/{userId:[0-9]+}", a.getUser).Methods("GET")
 }
 
 func (a *App) getOrders(w http.ResponseWriter, r *http.Request) {
 	apiErrors = []string{}
+	answer = Answer{}
 
 	redisOrders, err := a.Redis.GetOrders()
 	handleError(err)
@@ -119,47 +122,92 @@ func (a *App) deleteOrder(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, http.StatusOK, Answer{Errors: apiErrors})
 }
 
+func sendError(err error, w http.ResponseWriter, status int) {
+	handleError(err)
+	answer.setAnswerErrors()
+	respondWithJSON(w, status, answer)
+	return
+}
+
+func (a *App) addUser(w http.ResponseWriter, r *http.Request) {
+	user := db.User{}
+	apiErrors = []string{}
+	answer = Answer{}
+	decoder := json.NewDecoder(r.Body)
+	if err := decoder.Decode(&user); err != nil {
+		sendError(errors.New("Invalid request payload"), w, http.StatusBadRequest)
+		return
+	}
+	defer r.Body.Close()
+
+	newUser, err := a.DB.AddUser(user.Name, user.TgId)
+	if err != nil {
+		sendError(err, w, http.StatusNotFound)
+		return
+	}
+
+	redisUsers, _ := a.Redis.GetUsers()
+	if len(redisUsers) == 0 {
+		users := redisUsers
+		a.Redis.DeleteUsers()
+		users = append(users, newUser)
+		_, err = a.Redis.Set(_redis.USERS, users)
+	}
+
+	answer.setAnswerResult(newUser)
+
+	respondWithJSON(w, http.StatusCreated, answer)
+	return
+}
+
 func (a *App) getUser(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	apiErrors = []string{}
-	answer=Answer{}
+	answer = Answer{}
 
 	UserID, err := strconv.Atoi(vars["userId"])
-	handleError(err)
 
-	redisUsers, err := a.Redis.GetUsers()
-	handleError(err)
-
-	if len(redisUsers) == 0 {
-		user, err := a.DB.GetUser(UserID)
-		handleError(err)
-		answer.setAnswerResult(user)
-	} else {
-		findUserByTgId(UserID, redisUsers)
+	if err != nil {
+		sendError(err, w, http.StatusBadRequest)
+		return
 	}
 
-	answer.setAnswerErrors()
+	redisUsers, _ := a.Redis.GetUsers()
+	if len(redisUsers) == 0 {
+		user, err := a.DB.GetUser(UserID)
+		if err != nil {
+			sendError(err, w, http.StatusNotFound)
+			return
+		}
+		answer.setAnswerResult(user)
+	} else {
+		user, err := findUserByTgId(int64(UserID), redisUsers)
+		if err != nil {
+			sendError(err, w, http.StatusNotFound)
+			return
+		}
+		answer.setAnswerResult(user)
+	}
 
 	respondWithJSON(w, http.StatusOK, answer)
+	return
 }
 
-func (a *Answer) setAnswerErrors()  {
+func (a *Answer) setAnswerErrors() {
 	a.Errors = apiErrors
 }
 
-func (a *Answer) setAnswerResult(res interface{})  {
+func (a *Answer) setAnswerResult(res interface{}) {
 	a.Result = res
 }
 
-func findUserByTgId(tgId int, redisUsers []db.User) {
+func findUserByTgId(UserID int64, redisUsers []db.User) (user db.User, err error) {
 	for _, user := range redisUsers {
-		if tgId == user.TgId {
-			answer.setAnswerResult(user)
-			return
+		if UserID == user.Id {
+			return user, nil
 		}
 	}
-	apiErrors=append(apiErrors, "no user")
-	return
+	return db.User{}, errors.New("no user")
 }
 
 func respondWithJSON(w http.ResponseWriter, code int, res Answer) {

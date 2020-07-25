@@ -1,37 +1,23 @@
 package db
 
 import (
-	"go-api/config"
-	"log"
-
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
+	"go-api/config"
+	"log"
 )
 
-type UserAction interface {
-	AddUser(user User) (id int64, err error)
-	GetUser(tgId int) (res User, err error)
-	GetUsers() (users []User, err error)
-}
-type OrderAction interface {
-	GetOrder(orderId int) (order Order)
-	GetOrders() (orders []Order, err error)
-	DeleteOrder(orderId int) (res bool, err error)
-}
-
-type DBOperations interface {
+type Operations interface {
 	UserAction
 	OrderAction
-	// AddFactory(user Factory) (id int64, err error)
-	// GetFactory(factoryId int) (factory Factory)
-	// GetFactories() (factory Factory)
+	BaseAction
 }
 
-type DBManager struct {
+type Manager struct {
 	db *sqlx.DB
 }
 
-var Db DBOperations
+var Db Operations
 
 func init() {
 	db, err := sqlx.Connect("mysql", auth())
@@ -40,7 +26,7 @@ func init() {
 	} else {
 		log.Print("Db connect")
 	}
-	Db = &DBManager{db: db}
+	Db = &Manager{db: db}
 }
 
 func auth() string {
