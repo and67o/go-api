@@ -10,6 +10,7 @@ type UserAction interface {
 	GetUser(tgId int) (res User, err error)
 	GetUsers() (users []User, err error)
 	DeleteUsers() (res bool, err error)
+	DeleteUser(userId int) (err error)
 }
 
 func (DBM *Manager) AddUser(name string, tgId int) (user User, err error) {
@@ -44,7 +45,7 @@ func (DBM *Manager) GetUsers() (users []User, err error) {
 	return
 }
 
-func (DBM *Manager) DeleteUser(userId int) (res bool, err error) {
+func (DBM *Manager) DeleteUser(userId int) (err error) {
 	_, err = DBM.db.Exec("DELETE FROM users WHERE id = ?", userId)
 	if err != nil {
 		panic(err)

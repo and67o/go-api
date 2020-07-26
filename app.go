@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"go-api/db"
 	_redis "go-api/redis"
 	"log"
@@ -44,6 +45,7 @@ func (a *App) initializeRoutes() {
 	a.Router.HandleFunc("/users", a.getUsers).Methods("GET")
 	a.Router.HandleFunc("/user", a.addUser).Methods("POST")
 	a.Router.HandleFunc("/user/{userId:[0-9]+}", a.getUser).Methods("GET")
+	a.Router.HandleFunc("/user/{userId:[0-9]+}", a.deleteUser).Methods("DELETE")
 }
 
 func (a *App) getOrders(w http.ResponseWriter, r *http.Request) {
@@ -157,6 +159,30 @@ func (a *App) addUser(w http.ResponseWriter, r *http.Request) {
 	answer.setAnswerResult(newUser)
 
 	respondWithJSON(w, http.StatusCreated, answer)
+	return
+}
+
+func (a *App) deleteUser(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	apiErrors = []string{}
+	answer = Answer{}
+
+	userId, err := strconv.Atoi(vars["userId"])
+	if err != nil {
+		sendError(errors.New("Invalid User ID"), w, http.StatusBadRequest)
+		return
+	}
+
+	err = a.DB.DeleteUser(userId)
+
+	if err != nil {
+		sendError(err, w, http.StatusInternalServerError)
+		return
+	}
+
+	answer.setAnswerResult(fmt.Sprintf("user %d delete ", userId))
+
+	respondWithJSON(w, http.StatusOK, answer)
 	return
 }
 

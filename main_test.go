@@ -161,3 +161,21 @@ func TestGetUser(t *testing.T) {
 		t.Errorf("Expected product ID to be '1'. Got '%v'", data["id"])
 	}
 }
+
+func TestDeleteUser(t *testing.T) {
+	a.Redis.DeleteUsers()
+	a.DB.AddUser("for-delete", 34)
+
+	req, _ := http.NewRequest("GET", "/user/3", nil)
+	response := executeRequest(req)
+	checkResponseCode(t, http.StatusOK, response.Code)
+
+	req, _ = http.NewRequest("DELETE", "/user/3", nil)
+	response = executeRequest(req)
+
+	checkResponseCode(t, http.StatusOK, response.Code)
+
+	req, _ = http.NewRequest("GET", "/user/3", nil)
+	response = executeRequest(req)
+	checkResponseCode(t, http.StatusNotFound, response.Code)
+}
